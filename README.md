@@ -8,7 +8,7 @@ Vulkan Grass Rendering
 * Tested on: Windows 11, 14th Gen Intel(R) Core(TM) i9-14900HX @ 2.22GHz 32GB, RTX 4090 Laptop GPU 16GB (Personal Laptop)
 
 ## Final Render
-[Demo GIF](/img/demo.gif)
+![Demo GIF](/img/demo.gif)
 
 
 ## Overview
@@ -39,11 +39,11 @@ To maintain high performance, the compute shader culls blades that won't contrib
 
 | No Culling | Orientation Culling |
 | :---: | :---: |
-| <img alt="no culling image" src="https://github.com/user-attachments/assets/fe50142d-21fa-4635-be0e-8c10473145be" /> | [Orientation Culling GIF](/img/orientation_cull_demo.gif) |
+| <img alt="no culling image" src="https://github.com/user-attachments/assets/fe50142d-21fa-4635-be0e-8c10473145be" /> | ![Orientation Culling GIF](/img/orientation_cull_cut.gif) |
 
 | View-Frustum Culling | Distance Culling |
 | :---: | :---: |
-| [Frustum Culling GIF](/img/frustum_cull_demo.gif) | [Distance Culling GIF](/img/dist_cull_demo.gif) |
+| ![Frustum Culling GIF](/img/frustum_cull_cut.gif) | ![Distance Culling GIF](/img/dist_cull_cut.gif) |
 
 ### 3. Tessellation Pipeline
 Instead of passing thousands of vertices from the CPU, the graphics pipeline uses **Tessellation Control (TESC)** and **Tessellation Evaluation (TESE)** shaders. 
