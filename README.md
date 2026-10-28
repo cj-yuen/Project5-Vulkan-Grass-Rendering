@@ -58,4 +58,33 @@ To go beyond the base requirements, I enhanced the visuals to make the scene mor
 *   **Ambient Occlusion:** Blades are naturally darker at the roots and brighter at the tips, simulating self-shadowing.
 
 ## Performance Analysis
+All tests were run on the RTX 4090 Laptop GPU at a resolution of 1280x720. 
 
+### Impact of Blade Count
+As the number of blades increases, the compute shader has to do more physics calculations and the graphics pipeline has to tessellate more geometry. However, because the culling tests are highly effective, the rendering pipeline scales incredibly well.
+
+| Number of Blades | FPS (All Culling) | FPS (No Culling) |
+| :--- | :--- | :--- |
+| 8,192 (`1 << 13`) | 606 | 532 |
+| 32,768 (`1 << 15`) | 583 | 452 |
+| 262,144 (`1 << 18`)| 169 | 63 |
+
+<ins>Analysis:</ins> With all culling enabled, the performance drop from 8k to 262k blades is relatively minor (606 to 169 FPS) because the vast majority of blades are culled before rasterization. Without culling, the GPU is forced to tessellate and rasterize hundreds of thousands of blades, causing a massive frame rate drop (a 63% drop at max density). This proves that while modern GPUs like the RTX 4090 have immense compute power, tessellating 262k blades is still a heavy bottleneck without spatial heuristics.
+
+### Impact of Culling
+Culling is essential for maintaining a playable frame rate at high blade densities. The tests below were run with 262,144 blades.
+
+| Configuration | FPS |
+| :--- | :--- |
+| No Culling (Forced Render) | 64 |
+| All Culling Enabled | 178 |
+| Looking at Sky (Full Frustum Cull) | 1148 |
+
+<img width="720"  alt="impact of culling graph" src="https://github.com/user-attachments/assets/317f9d5c-1cb9-4490-92c2-f45600845eba" />
+
+
+<ins>Analysis:</ins> 
+*   **All Culling Enabled** provides a 2.8x performance boost over forcing all blades to render, bumping the frame rate from 64 to 178 FPS.
+*   **Orientation Culling** provides the largest baseline boost, as it removes up to 50% of the blades immediately (those facing away from the camera). 
+*   **View-Frustum Culling** provides dynamic savings based on camera angle. When looking at the sky, the FPS spikes to **1148** because the graphics pipeline has absolutely nothing to draw. This massive spike reveals that the compute shader physics and culling passes are incredibly cheap (taking only a fraction of a millisecond), and the true bottleneck in this application is rasterization and geometry processing.
+*   **Distance Culling** helps maintain performance when zooming out, ensuring the GPU doesn't waste time rendering sub-pixel geometry in the far distance.
