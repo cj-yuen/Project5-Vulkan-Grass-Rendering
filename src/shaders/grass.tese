@@ -17,6 +17,7 @@ layout(location = 3) in vec4 inUp[];
 
 layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out float fragHeight;
+layout(location = 2) out vec3 fragWorldPos;
 
 vec3 bezier(vec3 p0, vec3 p1, vec3 p2, float t) {
     return (1 - t)* (1 - t) * p0 
@@ -45,9 +46,11 @@ void main() {
 
     // face dir
     vec3 faceDir = vec3(cos(v0.w), 0.0, sin(v0.w));
-    vec3 normal = normalize(cross(faceDir, tangent));
+    vec3 normal = cross(faceDir, tangent);
     if (length(normal) < 0.001) {
         normal = vec3(0.0, 1.0, 0.0);
+    } else {
+        normal = normalize(normal);
     }
 
     // push vertex sideways
@@ -56,4 +59,5 @@ void main() {
     gl_Position = camera.proj * camera.view * vec4(finalPos, 1.0);
     fragNormal = normal;
     fragHeight = v;
+    fragWorldPos = finalPos;
 }
