@@ -1,7 +1,7 @@
 Vulkan Grass Rendering
 ==================================
 
-**University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 4**
+**University of Pennsylvania, CIS 565: GPU Programming and Architecture, Project 5**
 
 * Christopher Yuen
   * [LinkedIn](https://www.linkedin.com/in/christopher-yuen-16b5a8221/)
@@ -25,11 +25,11 @@ The compute shader runs a full physics pass on every blade before any rendering 
 
 | Baseline (No Force) | Gravity Only |
 | :---: | :---: |
-| <img alt="no force image" src="https://github.com/user-attachments/assets/6bbf52ba-c6b5-4421-88f8-7063691b9d14" /> | <img alt="gravity only" src="https://github.com/user-attachments/assets/657e2bc7-5510-4863-9216-cce05ebd41fa" /> |
+| <img alt="no force image" src="https://github.com/user-attachments/assets/6bbf52ba-c6b5-4421-88f8-7063691b9d14" /> ![baseline GIF](/img/baseline.gif) | <img alt="gravity only" src="https://github.com/user-attachments/assets/657e2bc7-5510-4863-9216-cce05ebd41fa" /> ![gravity GIF](/img/gravity.gif) |
 
 | Gravity + Recovery | All Forces (Wind Active) |
 | :---: | :---: |
-| <img alt="grav + recovery image" src="https://github.com/user-attachments/assets/6ffea061-c59b-479b-902b-2c9799cb2aa6" /> | <img alt="all forces image" src="https://github.com/user-attachments/assets/6b770a79-1764-4675-9504-6c30ccc57c72" /> |
+| <img alt="grav + recovery image" src="https://github.com/user-attachments/assets/6ffea061-c59b-479b-902b-2c9799cb2aa6" /> ![recovery GIF](/img/recovery.gif) | <img alt="all forces image" src="https://github.com/user-attachments/assets/6b770a79-1764-4675-9504-6c30ccc57c72" /> ![forces GIF](/img/forces.gif) |
 
 ### 2. Culling Tests
 To maintain high performance, the compute shader culls blades that won't contribute to the final frame. I implemented all three culling heuristics from the paper:
