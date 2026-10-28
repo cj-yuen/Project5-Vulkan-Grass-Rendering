@@ -88,3 +88,33 @@ Culling is essential for maintaining a playable frame rate at high blade densiti
 *   **Orientation Culling** provides the largest baseline boost, as it removes up to 50% of the blades immediately (those facing away from the camera). 
 *   **View-Frustum Culling** provides dynamic savings based on camera angle. When looking at the sky, the FPS spikes to **1148** because the graphics pipeline has absolutely nothing to draw. This massive spike reveals that the compute shader physics and culling passes are incredibly cheap (taking only a fraction of a millisecond), and the true bottleneck in this application is rasterization and geometry processing.
 *   **Distance Culling** helps maintain performance when zooming out, ensuring the GPU doesn't waste time rendering sub-pixel geometry in the far distance.
+
+## Build 
+
+### Prerequisites
+* **Vulkan SDK:** Tested with version 1.4.363.0. Ensure the `VK_SDK_PATH` environment variable is set.
+* **CMake:** Version 3.5 or higher (Note: CMake 4.x will require the workarounds mentioned in the CMake modifications section below).
+* **Visual Studio 2022:** With the "Desktop development with C++" workload installed.
+* **A Vulkan-capable GPU** with up-to-date drivers.
+
+### Steps
+1. **Clone the repository recursively.** This is crucial, as the project relies on git submodules (like GLFW) for external dependencies:
+   ```bash
+   git clone --recursive <your-repo-url>
+   cd Project5-Vulkan-Grass-Rendering
+   ```
+
+2. **Configure and Generate with CMake:**
+   * Open the CMake GUI.
+   * Set the "Source code" directory to the root of the cloned repository.
+   * Set the "Build the binaries" directory to a new folder named `build` (e.g., `.../Project5-Vulkan-Grass-Rendering/build`).
+   * Click **Configure** (select Visual Studio 17 2022 as the generator) and then **Generate**.
+
+3. **Compile in Visual Studio:**
+   * Click **Open Project** in CMake (or double-click `vulkan_grass_rendering.sln` in the `build` folder).
+   * Set the build configuration to **Release** (or Debug, though Release will give you the best frame rates for the performance analysis).
+   * Build the solution (`Ctrl + Shift + B`). This will compile the C++ code and automatically run `glslangValidator` to compile the `.vert`, `.frag`, `.comp`, `.tesc`, and `.tese` shaders into `.spv` binaries in the `build/shaders` folder.
+
+4. **Run:**
+   * Ensure the working directory is set correctly (Visual Studio usually handles this if you run directly from the IDE). 
+   * Run `vulkan_grass_rendering.exe` from the `build` directory.
