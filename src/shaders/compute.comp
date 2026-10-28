@@ -36,21 +36,147 @@ struct Blade {
 // 	  uint firstInstance; // = 0
 // } numBlades;
 
+// input blades 
+layout(set = 2, binding = 0) buffer InBlades {
+    Blade blades[];
+} inBlades;
+
+// output blades 
+layout(set = 2, binding = 1) buffer OutBlades {
+    Blade blades[];
+} outBlades;
+
+// num of blades 
+layout(set = 2, binding = 2) buffer NumBlades {
+    uint vertexCount;   // num of blades
+    uint instanceCount; // = 1
+    uint firstVertex;   // = 0
+    uint firstInstance; // = 0
+} numBlades;
+
 bool inBounds(float value, float bounds) {
     return (value >= -bounds) && (value <= bounds);
 }
 
 void main() {
 	// Reset the number of blades to 0
-	if (gl_GlobalInvocationID.x == 0) {
-		// numBlades.vertexCount = 0;
-	}
-	barrier(); // Wait till all threads reach this point
+	// if (gl_GlobalInvocationID.x == 0) {
+	// numBlades.vertexCount = 0;
+	// }
+	// barrier(); // Wait till all threads reach this point
 
     // TODO: Apply forces on every blade and update the vertices in the buffer
+
+    uint index = gl_GlobalInvocationID.x;
+    Blade b = inBlades.blades[index];
+
+    // physics sim 
+    vec3 gE = normalize(vec3(0.0, -1.0, 0.0)) * 9.8;    // gravity
+    vec3 front = vec3(cos(b.v0.w), 0.0, sin(b.v0.w));   // blade front dir 
+    vec3 gF = 0.25 * length(gE) * front;                // front gravity
+    vec3 g = gE + gF;                                   // total gravity 
+    
+    // recovery (Hooke's law)
+    vec3 iv2 = b.v0.xyz + b.up.xyz * b.v1.w;    // initial v2 pos
+    vec3 r = (iv2 - b.v2.xyz) * b.up.w;         // stiffness (up.w)
+
+    // wind (sinusoidal wave)
+    vec3 windDir = vec3(sin(b.v0.x * 0.5 + totalTime), 0.0, cos(b.v0.z * 0.5 + totalTime));
+    vec3 bladeDir = normalize(b.v2.xyz - b.v0.xyz);
+    float windAlign = 1.0 - abs(dot(normalize(windDir), bladeDir));
+    float heighRatio = dot(b.v2.xyz - b.v0.xyz, b.up.xyz) / b.v1.w;
+    vec3 w = windDir * windAlign * heighRatio * 5.0;                    // wind strength = 5.0
+
+    // apply translation to v2
+    vec3 translation = (g + r + w) * deltaTime;
+    vec3 newV2 = b.v2.xyz + translation;
+
+    // prevent v2 from going below ground
+    if (newV2.y < b.v0.y) {
+        newV2.y = b.v0.y;
+    }
+
+    // correct length to ensure no stretching
+    vec3 dir = normalize(newV2 - b.v0.xyz);
+    newV2 = b.v0.xyz + dir * b.v1.w;
+
+    // correct v1 for curvature 
+    vec3 up = b.up.xyz;
+    float lproj = length(newV2 - b.v0.xyz - up * dot(newV2 - b.v0.xyz, up));
+    vec3 newV1 = b.v0.xyz + up * b.v1.w * max(1.0 - lproj / b.v1.w, 0.05 * max(lproj / b.v1.w, 1.0));
+
+    // save new state back for next frame's simulation
+    b.v1.xyz = newV1;
+    b.v2.xyz = newV2;
+    inBlades.blades[index] = b;
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
+
+    bool isCulled = false;
+    vec3 camPos = inverse(camera.view)[3].xyz;
+
+    // orientation culling
+    vec3 viewDir = normalize(camPos - b.v0.xyz);
+
+    vec3 viewDirXZ = vec3(viewDir.x, 0.0, viewDir.z);
+
+    if (length(viewDirXZ) > 0.001) {
+        if (abs(dot(front, normalize(viewDirXZ))) < 0.1) {
+            isCulled = true;
+        }
+    }
+
+    // view-frustum culling 
+    vec3 m = 0.25 * b.v0.xyz + 0.5 * b.v1.xyz + 0.25 * b.v2.xyz; // blade center
+
+    vec4 clip0 = camera.proj * camera.view * vec4(b.v0.xyz, 1.0);
+    vec4 clip2 = camera.proj * camera.view * vec4(b.v2.xyz, 1.0);
+    vec4 clipM = camera.proj * camera.view * vec4(m, 1.0);
+
+    // tolerance buffer 
+    float tol = 1.5;
+
+    bool out0 = clip0.x < -clip0.w * tol || clip0.x > clip0.w * tol ||
+                clip0.y < -clip0.w * tol || clip0.y > clip0.w * tol ||
+                clip0.z < 0.0 || clip0.z > clip0.w;
+
+    bool out2 = clip2.x < -clip2.w * tol || clip2.x > clip2.w * tol ||
+                clip2.y < -clip2.w * tol || clip2.y > clip2.w * tol ||
+                clip2.z < 0.0 || clip2.z > clip2.w;
+
+    bool outM = clipM.x < -clipM.w * tol || clipM.x > clipM.w * tol ||
+                clipM.y < -clipM.w * tol || clipM.y > clipM.w * tol ||
+                clipM.z < 0.0 || clipM.z > clipM.w;
+
+    if (out0 && out2 && outM) {
+        isCulled = true;
+    }
+
+    // distance culling
+    float maxDist = 40.0;
+    float dist = length(camPos - b.v0.xyz);
+    
+    if (dist > maxDist) {
+        isCulled = true;
+    } else {
+        int buckets = 10;
+        int bucket = int((dist / maxDist) * buckets);
+        if (bucket > 0) {
+            float hash = fract(sin(float(index) * 12.9898) * 43758.5453);
+
+            if (hash < float(bucket) / float(buckets)) {
+                isCulled = true;
+            }
+        }
+    }
+
+    // write to culled buffer if survived
+    if (!isCulled) {
+        uint index = atomicAdd(numBlades.vertexCount, 1);
+        outBlades.blades[index] = b;
+    }
+
 }
