@@ -8,8 +8,9 @@ Vulkan Grass Rendering
 * Tested on: Windows 11, 14th Gen Intel(R) Core(TM) i9-14900HX @ 2.22GHz 32GB, RTX 4090 Laptop GPU 16GB (Personal Laptop)
 
 ## Final Render
-![Demo GIF](/img/demo.gif)
+![New Demo GIF](/img/new_demo.gif)
 
+![Demo GIF](/img/demo.gif)
 
 ## Overview
 This project implements a real-time, physically-based grass simulator and renderer using Vulkan and Compute Shaders. Following the paper [Responsive Real-Time Grass Rendering for General 3D Scenes](https://www.cg.tuwien.ac.at/research/publications/2017/JAHRMANN-2017-RRTG/JAHRMANN-2017-RRTG-draft.pdf), grass blades are represented as Bezier curves. The GPU handles force simulations (gravity, recovery, wind), parallel culling (orientation, frustum, distance), and dynamic tessellation to generate high-density fields of grass. To push the visual quality further, I implemented a procedural skybox and advanced shading techniques inspired by *Ghost of Tsushima*, including root-to-tip color gradients, ambient occlusion, and fake subsurface scattering.
